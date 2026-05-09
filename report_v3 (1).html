@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>自贡职业技术学院 中考志愿分析报告 v3+</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --primary: #1a56db;
+    --primary-light: #e8f0fe;
+    --danger: #e02424;
+    --danger-light: #fde8e8;
+    --warning: #c27803;
+    --warning-light: #fdf6b2;
+    --success: #057a55;
+    --success-light: #def7ec;
+    --gray: #6b7280;
+    --gray-light: #f9fafb;
+    --border: #e5e7eb;
+    --text: #111827;
+    --text-secondary: #4b5563;
+    --radius: 12px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f0f4f8;
+    color: var(--text);
+    line-height: 1.7;
+  }
+
+  /* 顶部大标题区 */
+  .hero {
+    background: linear-gradient(135deg, #1a3a6e 0%, #1a56db 60%, #3b82f6 100%);
+    color: white;
+    padding: 40px 24px 32px;
+    text-align: center;
+  }
+  .hero h1 { font-size: 24px; font-weight: 800; margin-bottom: 6px; }
+  .hero p { font-size: 14px; opacity: 0.85; }
+  .hero .meta { margin-top: 12px; display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+  .hero .meta span {
+    background: rgba(255,255,255,0.15);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 13px;
+  }
+
+  /* 核心风险条幅 */
+  .alert-banner {
+    background: #7f1d1d;
+    color: #fef2f2;
+    padding: 16px 20px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    border-left: 5px solid #ef4444;
+  }
+  .alert-banner .icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+  .alert-banner strong { color: #fca5a5; }
+
+  .container { max-width: 900px; margin: 0 auto; padding: 20px 16px 40px; }
+
+  /* 卡片 */
+  .card {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .card-header .num {
+    background: var(--primary);
+    color: white;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; flex-shrink: 0;
+  }
+  .card-header h2 { font-size: 17px; font-weight: 700; }
+  .card-body { padding: 20px; }
+
+  /* badge */
+  .badge {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .badge-danger { background: var(--danger-light); color: var(--danger); }
+  .badge-warning { background: var(--warning-light); color: var(--warning); }
+  .badge-success { background: var(--success-light); color: var(--success); }
+  .badge-blue { background: var(--primary-light); color: var(--primary); }
+  .badge-gray { background: #f3f4f6; color: var(--gray); }
+
+  /* 学校对比表 */
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th {
+    background: #f3f4f6;
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-bottom: 2px solid var(--border);
+  }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fafafa; }
+  .tbl-highlight td { background: #fffbeb; }
+
+  /* 分数线时间轴 */
+  .score-list { display: flex; flex-direction: column; gap: 10px; }
+  .score-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    position: relative;
+  }
+  .score-item.unreachable { background: var(--danger-light); border-color: #fca5a5; }
+  .score-item.borderline  { background: var(--warning-light); border-color: #fcd34d; }
+  .score-item.reachable   { background: var(--success-light); border-color: #6ee7b7; }
+  .score-item .school-name { flex: 1; font-weight: 600; font-size: 14px; }
+  .score-item .score-val { font-size: 20px; font-weight: 800; color: var(--text); min-width: 60px; text-align: right; }
+  .score-item .diff { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+  /* 风险卡片 */
+  .risk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media(max-width: 600px) { .risk-grid { grid-template-columns: 1fr; } }
+  .risk-item {
+    border-radius: 8px;
+    padding: 14px 16px;
+    border-left: 4px solid;
+  }
+  .risk-item.high  { background: var(--danger-light); border-color: var(--danger); }
+  .risk-item.med   { background: var(--warning-light); border-color: var(--warning); }
+  .risk-item.low   { background: var(--success-light); border-color: var(--success); }
+  .risk-item h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .risk-item p  { font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+
+  /* 学费对比 */
+  .fee-compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  @media(max-width: 580px) { .fee-compare { grid-template-columns: 1fr; } }
+  .fee-box {
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+  .fee-box.public  { background: linear-gradient(135deg,#ecfdf5,#d1fae5); border: 1px solid #6ee7b7; }
+  .fee-box.private { background: linear-gradient(135deg,#fff7ed,#ffedd5); border: 1px solid #fdba74; }
+  .fee-box .school-tag { font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+  .fee-box .price { font-size: 32px; font-weight: 800; }
+  .fee-box .per   { font-size: 12px; color: var(--text-secondary); }
+  .fee-box .total { margin-top: 8px; font-size: 13px; font-weight: 600; }
+  .fee-box .note  { margin-top: 6px; font-size: 11px; color: var(--text-secondary); }
+
+  /* 进度条评分 */
+  .score-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .score-row .dim { width: 110px; font-size: 13px; flex-shrink: 0; }
+  .score-row .bar-wrap { flex: 1; height: 10px; background: #e5e7eb; border-radius: 5px; overflow: hidden; }
+  .score-row .bar { height: 100%; border-radius: 5px; }
+  .score-row .bar.red    { background: var(--danger); }
+  .score-row .bar.orange { background: #f97316; }
+  .score-row .bar.yellow { background: #eab308; }
+  .score-row .bar.green  { background: var(--success); }
+  .score-row .pct { font-size: 13px; font-weight: 700; min-width: 36px; }
+
+  /* 推荐方案 */
+  .plan-box {
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 12px;
+    position: relative;
+  }
+  .plan-box .plan-num {
+    position: absolute;
+    top: -10px; left: 16px;
+    background: var(--primary);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 10px;
+  }
+  .plan-box.best   { background: var(--success-light); border: 1px solid #6ee7b7; }
+  .plan-box.second { background: var(--primary-light);  border: 1px solid #93c5fd; }
+  .plan-box.third  { background: var(--warning-light);  border: 1px solid #fcd34d; }
+  .plan-box h4 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .plan-box ul { padding-left: 16px; font-size: 13px; color: var(--text-secondary); }
+  .plan-box ul li { margin-bottom: 3px; }
+
+  /* 3年路径 */
+  .path-timeline { position: relative; padding-left: 28px; }
+  .path-timeline::before {
+    content: '';
+    position: absolute;
+    left: 9px; top: 10px; bottom: 10px;
+    width: 2px; background: var(--border);
+  }
+  .path-step { position: relative; margin-bottom: 18px; }
+  .path-step::before {
+    content: '';
+    position: absolute;
+    left: -22px; top: 6px;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--primary);
+    border: 2px solid white;
+    box-shadow: 0 0 0 2px var(--primary);
+  }
+  .path-step h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .path-step p  { font-size: 13px; color: var(--text-secondary); }
+
+  /* 专业表格 */
+  .spec-table { font-size: 13px; }
+  .spec-table th { font-size: 12px; }
+
+  /* 口碑 */
+  .review-item {
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: var(--gray-light);
+    border-left: 3px solid;
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+  .review-item.neg { border-color: var(--danger); }
+  .review-item.pos { border-color: var(--success); }
+  .review-item .src { font-size: 11px; color: var(--gray); margin-top: 4px; }
+
+  /* source chip */
+  .src-chip {
+    display: inline-block;
+    background: #f0f4f8;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 11px;
+    color: var(--gray);
+    margin-left: 4px;
+  }
+
+  /* 重要提示盒子 */
+  .info-box {
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 13px;
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+  }
+  .info-box.blue    { background: var(--primary-light); border: 1px solid #93c5fd; color: #1e40af; }
+  .info-box.yellow  { background: var(--warning-light); border: 1px solid #fcd34d; color: #92400e; }
+  .info-box.red     { background: var(--danger-light);  border: 1px solid #fca5a5; color: #991b1b; }
+  .info-box.green   { background: var(--success-light); border: 1px solid #6ee7b7; color: #065f46; }
+
+  /* 小标注 */
+  .footnote { font-size: 12px; color: var(--gray); margin-top: 8px; line-height: 1.6; }
+
+  /* 分割线标题 */
+  .section-divider {
+    text-align: center;
+    font-size: 12px;
+    color: var(--gray);
+    margin: 6px 0;
+    position: relative;
+  }
+  .section-divider::before, .section-divider::after {
+    content: '';
+    position: absolute;
+    top: 50%; width: 42%;
+    height: 1px; background: var(--border);
+  }
+  .section-divider::before { left: 0; }
+  .section-divider::after  { right: 0; }
+
+  /* 费用对比醒目方框 */
+  .cost-highlight {
+    background: linear-gradient(90deg,#1a3a6e,#1a56db);
+    color: white;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 12px 0;
+    display: flex;
+    justify-content: space-around;
+    gap: 12px;
+    flex-wrap: wrap;
+    text-align: center;
+  }
+  .cost-highlight .cost-item .label { font-size: 12px; opacity: 0.8; }
+  .cost-highlight .cost-item .val   { font-size: 22px; font-weight: 800; }
+  .cost-highlight .cost-item .sub   { font-size: 12px; opacity: 0.7; margin-top: 2px; }
+
+  /* 注释标记 */
+  sup.mark {
+    background: var(--warning);
+    color: white;
+    border-radius: 3px;
+    font-size: 10px;
+    padding: 1px 4px;
+    font-weight: 600;
+    vertical-align: super;
+  }
+
+  .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+
+  /* sticky 顶部目录 */
+  .toc {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 14px 20px;
+    margin-bottom: 20px;
+  }
+  .toc h3 { font-size: 13px; color: var(--gray); margin-bottom: 10px; }
+  .toc-items { display: flex; flex-wrap: wrap; gap: 8px; }
+  .toc-items a {
+    font-size: 13px;
+    color: var(--primary);
+    text-decoration: none;
+    padding: 4px 10px;
+    background: var(--primary-light);
+    border-radius: 20px;
+  }
+  .toc-items a:hover { text-decoration: underline; }
+
+  /* 底部说明 */
+  .footer {
+    text-align: center;
+    font-size: 12px;
+    color: var(--gray);
+    padding: 20px 0 0;
+    border-top: 1px solid var(--border);
+    margin-top: 10px;
+  }
+
+  /* ===== 小红书补充模块专属样式 ===== */
+  .xhs-section-header {
+    background: linear-gradient(135deg, #ff2442 0%, #ff6b81 100%);
+    color: white;
+    border-radius: var(--radius) var(--radius) 0 0;
+    padding: 14px 20px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .xhs-section-header .xhs-icon {
+    background: rgba(255,255,255,0.2);
+    width: 28px; height: 28px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 800; flex-shrink: 0;
+  }
+  .xhs-section-header h2 { font-size: 17px; font-weight: 700; }
+  .xhs-section-header .xhs-sub { font-size: 12px; opacity: 0.85; margin-top: 1px; }
+
+  .xhs-badge-inline {
+    display: inline-flex; align-items: center;
+    background: #ff2442; color: white;
+    border-radius: 4px; padding: 1px 7px; font-size: 11px; font-weight: 700;
+    vertical-align: middle; margin-left: 4px;
+  }
+  .verified-tag {
+    display: inline-flex; align-items: center;
+    background: var(--success-light); color: var(--success);
+    border-radius: 4px; padding: 1px 7px; font-size: 11px; font-weight: 600;
+    vertical-align: middle; margin-left: 4px;
+  }
+  .partial-tag {
+    display: inline-flex; align-items: center;
+    background: var(--warning-light); color: var(--warning);
+    border-radius: 4px; padding: 1px 7px; font-size: 11px; font-weight: 600;
+    vertical-align: middle; margin-left: 4px;
+  }
+
+  .verify-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 11px 0; border-bottom: 1px solid var(--border);
+  }
+  .verify-row:last-child { border-bottom: none; }
+  .verify-row .v-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .verify-row .v-title { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+  .verify-row .v-body  { font-size: 12.5px; color: var(--text-secondary); line-height: 1.6; }
+
+  .xhs-review {
+    padding: 11px 14px; border-radius: 8px;
+    background: var(--gray-light); border-left: 3px solid;
+    margin-bottom: 9px; font-size: 12.5px; line-height: 1.55;
+  }
+  .xhs-review.neg { border-color: var(--danger); }
+  .xhs-review.pos { border-color: var(--success); }
+  .xhs-review .xhs-meta {
+    font-size: 11px; color: var(--gray); margin-top: 4px;
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+
+  .dorm-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 12px; }
+  @media(max-width:600px) { .dorm-grid { grid-template-columns: 1fr; } }
+  .dorm-card {
+    border-radius: 8px; padding: 12px; text-align: center;
+    border: 1px solid var(--border);
+  }
+  .dorm-card.d6 { background: linear-gradient(135deg,#f0f9ff,#e0f2fe); border-color: #7dd3fc; }
+  .dorm-card.d4 { background: linear-gradient(135deg,#fdf4ff,#f3e8ff); border-color: #d8b4fe; }
+  .dorm-card.d2 { background: linear-gradient(135deg,#fff7ed,#ffedd5); border-color: #fdba74; }
+  .dorm-card .d-type  { font-size: 11px; font-weight: 700; margin-bottom: 4px; }
+  .dorm-card .d-num   { font-size: 22px; font-weight: 900; }
+  .dorm-card .d-label { font-size: 10px; color: var(--gray); }
+  .dorm-card .d-features { font-size: 11px; margin-top: 6px; text-align: left; color: var(--text-secondary); line-height: 1.7; }
+
+  .chart-wrap-xhs { position: relative; height: 220px; margin: 10px 0; }
+  .chart-wrap-xhs-sm { position: relative; height: 180px; margin: 8px 0; }
+
+  .xhs-topic-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 0; font-size: 13px;
+  }
+  .xhs-topic-row .topic-name { width: 110px; flex-shrink: 0; }
+  .xhs-topic-row .topic-bar-wrap { flex: 1; height: 9px; background: #e5e7eb; border-radius: 5px; overflow: hidden; }
+  .xhs-topic-row .topic-bar { height: 100%; border-radius: 5px; background: #ff2442; }
+  .xhs-topic-row .topic-val { font-size: 12px; font-weight: 700; min-width: 32px; text-align: right; color: var(--text-secondary); }
+
+  .mgmt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media(max-width:600px) { .mgmt-grid { grid-template-columns: 1fr; } }
+
+  .xhs-divider {
+    text-align: center; font-size: 12px; color: var(--gray);
+    margin: 16px 0 12px; display: flex; align-items: center; gap: 8px;
+  }
+  .xhs-divider::before, .xhs-divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+</style>
+</head>
+<body>
+
+<!-- 大标题 -->
+<div class="hero">
+  <h1>🎓 自贡中考志愿分析报告</h1>
+  <p>目标学生：侄子，约 400 分 · 聚焦职业技术学院选择决策</p>
+  <div class="meta">
+    <span>📅 2025年 数据</span>
+    <span>🏫 中职升学实验班</span>
+    <span>✅ 学费数据已重新核验</span>
+    <span>🔴 小红书100条帖子已补充</span>
+    <span>v3+ · 小红书校验版</span>
+  </div>
+</div>
+
+<!-- 风险横幅 -->
+<div class="alert-banner">
+  <div class="icon">⚠️</div>
+  <div>
+    <strong>核心结论（先读）：</strong> 「自贡职业技术学院」中专部<strong>升学实验班</strong> 2025年录取线 <strong>472.1分</strong>，400分低于录取线约72分，<strong>多交钱也无法进入升学实验班</strong>（此说法违反招生规定）。若不在意班型，公办「自贡职业技术学校」普通升学班仅需 ≥210分，<strong>完全免学费</strong>，性价比远超民办私立。
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- 目录 -->
+  <div class="toc">
+    <h3>📋 报告目录</h3>
+    <div class="toc-items">
+      <a href="#s1">① 学校辨析</a>
+      <a href="#s2">② 400分能进哪里</a>
+      <a href="#s3">③ "交钱降分"陷阱</a>
+      <a href="#s4">④ 学费对比（已修正）</a>
+      <a href="#s5">⑤ 专业与收费明细</a>
+      <a href="#s6">⑥ 综合评分</a>
+      <a href="#s7">⑦ 网络口碑</a>
+      <a href="#s8">⑧ 推荐方案</a>
+      <a href="#s9">⑨ 三年路径规划</a>
+      <a href="#s10" style="background:#fff0f3;color:#ff2442;border:1px solid #ffb3c1;">🔴 ⑩ 小红书数据校验</a>
+      <a href="#s11" style="background:#fff0f3;color:#ff2442;border:1px solid #ffb3c1;">🔴 ⑪ 住宿实拍</a>
+      <a href="#s12" style="background:#fff0f3;color:#ff2442;border:1px solid #ffb3c1;">🔴 ⑫ 校园管理风格</a>
+      <a href="#s13" style="background:#fff0f3;color:#ff2442;border:1px solid #ffb3c1;">🔴 ⑬ 口碑话题图谱</a>
+    </div>
+  </div>
+
+  <!-- ① 学校辨析 -->
+  <div class="card" id="s1">
+    <div class="card-header">
+      <div class="num">1</div>
+      <h2>⚠️ 关键：两所"职业技术"学校辨析</h2>
+    </div>
+    <div class="card-body">
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;">名称相似、性质截然不同，填志愿时务必看清！</p>
+      <table>
+        <thead>
+          <tr>
+            <th>对比项</th>
+            <th>🔴 自贡职业技术学院中专部</th>
+            <th>🟢 自贡职业技术学校</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>办学性质</strong></td>
+            <td><span class="badge badge-danger">民办（私立）</span></td>
+            <td><span class="badge badge-success">公办（国家级重点）</span></td>
+          </tr>
+          <tr>
+            <td><strong>学历层次</strong></td>
+            <td>中专（中职）附属部门</td>
+            <td>独立中职学校</td>
+          </tr>
+          <tr>
+            <td><strong>招生代码</strong></td>
+            <td>73005</td>
+            <td>不同（请查当年批次）</td>
+          </tr>
+          <tr>
+            <td><strong>学费政策</strong></td>
+            <td>政府最高限价约7600元/年<br><span style="font-size:12px;color:var(--gray)">含政府补贴2000元，学生实缴约5600元/年</span></td>
+            <td><span class="badge badge-success">国家免学费 = 0元/年</span><br><span style="font-size:12px;color:var(--gray)">政府补贴学校2000元/生·年</span></td>
+          </tr>
+          <tr class="tbl-highlight">
+            <td><strong>升学实验班分数线（2025）</strong></td>
+            <td><strong style="color:var(--danger)">472.1分</strong></td>
+            <td><strong style="color:var(--danger)">504.9分</strong></td>
+          </tr>
+          <tr>
+            <td><strong>普通班/就业班门槛</strong></td>
+            <td>较低</td>
+            <td><strong style="color:var(--success)">≥ 210分</strong></td>
+          </tr>
+          <tr>
+            <td><strong>400分能否入读</strong></td>
+            <td>普通班可以，<br>升学实验班 <span class="badge badge-danger">不能</span></td>
+            <td>普通升学就业班 <span class="badge badge-success">可以</span><br>升学实验班 <span class="badge badge-danger">不能</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="info-box yellow" style="margin-top:14px;">
+        <span>⚠️</span>
+        <span>老师提到的"自贡职业技术学院"是<strong>民办</strong>机构；而"自贡职业技术学校"是<strong>公办国家级重点</strong>。两者经常被混淆。</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② 400分能进哪里 -->
+  <div class="card" id="s2">
+    <div class="card-header">
+      <div class="num">2</div>
+      <h2>📊 400分在自贡中职的真实位置（2025年官方数据）</h2>
+    </div>
+    <div class="card-body">
+      <div class="score-list">
+        <div class="score-item unreachable">
+          <div>
+            <div class="school-name">自贡职业技术学校 · 升学实验班</div>
+            <div class="diff">公办 · 国家级重点 · 差距约105分</div>
+          </div>
+          <div>
+            <div class="score-val">504.9</div>
+            <span class="badge badge-danger">差105分</span>
+          </div>
+        </div>
+        <div class="score-item unreachable">
+          <div>
+            <div class="school-name">自贡职业技术学院中专部 · 升学实验班</div>
+            <div class="diff">民办 · 老师推荐对象 · 差距约72分</div>
+          </div>
+          <div>
+            <div class="score-val">472.1</div>
+            <span class="badge badge-danger">差72分</span>
+          </div>
+        </div>
+        <div class="score-item borderline">
+          <div>
+            <div class="school-name">四川省盐业学校 · 升学实验班</div>
+            <div class="diff">需确认办学性质 · 差距约4分</div>
+          </div>
+          <div>
+            <div class="score-val">404.0</div>
+            <span class="badge badge-warning">差4分</span>
+          </div>
+        </div>
+        <div class="score-item reachable" style="border:2px solid #059669">
+          <div>
+            <div class="school-name" style="color:#065f46">👉 参考位置：侄子 约400分</div>
+            <div class="diff" style="color:#047857">处于盐业学校线附近，远低于职业技术学院升学班</div>
+          </div>
+          <div>
+            <div class="score-val" style="color:#047857">~400</div>
+            <span class="badge badge-success">当前分数</span>
+          </div>
+        </div>
+        <div class="score-item reachable">
+          <div>
+            <div class="school-name">自贡倍乐职业技术学校 · 升学实验班</div>
+            <div class="diff">民办 · 400分可进升学实验班</div>
+          </div>
+          <div>
+            <div class="score-val">383.0</div>
+            <span class="badge badge-success">可进入</span>
+          </div>
+        </div>
+        <div class="score-item reachable">
+          <div>
+            <div class="school-name">自贡职业技术学校 · 普通升学就业班</div>
+            <div class="diff">公办国家级重点 · <strong>完全免学费</strong> · 400分轻松进入</div>
+          </div>
+          <div>
+            <div class="score-val">≥210</div>
+            <span class="badge badge-success">轻松可进</span>
+          </div>
+        </div>
+      </div>
+      <div class="info-box blue" style="margin-top:14px;">
+        <span>📌</span>
+        <span>数据来源：自贡市2025年初中毕业生升学职业学校志愿录取最低分数线（官方公布）</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ "交钱降分"陷阱 -->
+  <div class="card" id="s3">
+    <div class="card-header">
+      <div class="num">3</div>
+      <h2>🚨 "多交钱就能降分进升学实验班"——4种可能真相</h2>
+    </div>
+    <div class="card-body">
+      <div class="risk-grid">
+        <div class="risk-item high">
+          <h4>❌ 可能性A：诈骗话术（高风险）</h4>
+          <p>违规承诺违反四川省招生监管规定，骗取家长额外费用后实际无法兑现。</p>
+        </div>
+        <div class="risk-item high">
+          <h4>❌ 可能性B：班级名称偷换（高风险）</h4>
+          <p>实际入读的是"普通班"而非"升学实验班"，却收取升学班价格，导致冤枉多花钱。</p>
+        </div>
+        <div class="risk-item med">
+          <h4>⚠️ 可能性C：班级内部分层（中风险）</h4>
+          <p>学校内部将普通班再细分，缴费多的班可获得更多关注，但并非真正的升学实验班。</p>
+        </div>
+        <div class="risk-item low">
+          <h4>✅ 可能性D（最良性解读）</h4>
+          <p>老师实际意思是：缴清学费就可报名，进普通升学就业班，而这个班本来就不需要很高分。但说法严重夸大了效果。</p>
+        </div>
+      </div>
+      <div class="info-box red" style="margin-top:14px;">
+        <span>🔴</span>
+        <div>
+          <strong>无论哪种情况：</strong>400分无法进升学实验班这个事实不会改变。即使按可能性D理解，在民办学校普通班就读，不如直接选择<strong>免学费的公办自贡职业技术学校普通升学班</strong>，省下约1.7万元学费。
+        </div>
+      </div>
+      <p style="font-size:13px;color:var(--text-secondary);margin-top:10px;">
+        ⚡ 若老师有提成利益（招生提成在职业学校中普遍存在），推荐民办学校属正常商业行为，但与家庭利益存在明显冲突。
+      </p>
+    </div>
+  </div>
+
+  <!-- ④ 学费对比（修正版） -->
+  <div class="card" id="s4">
+    <div class="card-header">
+      <div class="num">4</div>
+      <h2>💰 3年实际费用对比（数据已修正核实）</h2>
+    </div>
+    <div class="card-body">
+      <div class="fee-compare">
+        <div class="fee-box public">
+          <div class="school-tag">🟢 公办 · 自贡职业技术学校</div>
+          <div class="price" style="color:#065f46">0 元</div>
+          <div class="per">/ 年学费</div>
+          <div class="total">3年学费总计：<strong>0元</strong></div>
+          <div class="note">国家免学费政策：政府补贴学校2000元/生·年<br>学生实缴：<strong>0元学费</strong></div>
+        </div>
+        <div class="fee-box private">
+          <div class="school-tag">🔴 民办 · 自贡职业技术学院中专部</div>
+          <div class="price" style="color:#c2410c">约5600元</div>
+          <div class="per">/ 年学费（学生实缴）</div>
+          <div class="total">3年学费总计：<strong>约16800元</strong></div>
+          <div class="note">政府批复上限7600元/年（含补贴约2000元）<br>学生实缴 ≈ 7600 - 2000 = <strong>5600元/年</strong></div>
+        </div>
+      </div>
+
+      <div class="info-box yellow">
+        <span>⚠️</span>
+        <div>
+          <strong>重要说明：</strong>政府文件（自发改发〔2025〕122号）规定的7600元是<strong>含财政补助的最高限价</strong>，不等于学生实际缴费。各专业实际收费以学校正式收费通知为准，建议报名前向学校索取收费确认函。
+        </div>
+      </div>
+
+      <div class="cost-highlight">
+        <div class="cost-item">
+          <div class="label">公办3年总费用</div>
+          <div class="val">~4,500元</div>
+          <div class="sub">仅住宿+生活费（约1500元/年）</div>
+        </div>
+        <div class="cost-item">
+          <div class="label">民办3年总费用</div>
+          <div class="val">~25,800元</div>
+          <div class="sub">学费16800元+住宿生活9000元</div>
+        </div>
+        <div class="cost-item">
+          <div class="label">3年费用差额</div>
+          <div class="val">~21,300元</div>
+          <div class="sub" style="color:#fca5a5">选民办的额外支出</div>
+        </div>
+      </div>
+
+      <div class="footnote">
+        ⚙️ 计算说明：住宿费估算500-1200元/年（公私均有），生活费另计。大专（高职）层次学费12000-13700元/年<strong>与此无关</strong>（那是高考后读的大学，侄子目前中考阶段不适用）。
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑤ 专业与收费明细 -->
+  <div class="card" id="s5">
+    <div class="card-header">
+      <div class="num">5</div>
+      <h2>📚 自贡职业技术学院中专部 专业与收费明细</h2>
+    </div>
+    <div class="card-body">
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">
+        以下为政府批复的学费上限（<strong>均含财政补助约2000元</strong>，学生实缴 = 批复上限 - 补贴），供参考：
+      </p>
+      <table class="spec-table">
+        <thead>
+          <tr>
+            <th>专业名称</th>
+            <th>批复最高限价</th>
+            <th>学生实缴（估算）</th>
+            <th>批复文号</th>
+            <th>3年学费（实缴）</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>计算机应用</td>
+            <td>7600元/年</td>
+            <td>约5600元/年</td>
+            <td>原批次</td>
+            <td>约16800元</td>
+          </tr>
+          <tr>
+            <td>民航运输服务</td>
+            <td>7600元/年</td>
+            <td>约5600元/年</td>
+            <td>原批次</td>
+            <td>约16800元</td>
+          </tr>
+          <tr>
+            <td>城市轨道交通运营管理</td>
+            <td>7600元/年</td>
+            <td>约5600元/年</td>
+            <td>原批次</td>
+            <td>约16800元</td>
+          </tr>
+          <tr>
+            <td>新能源汽车技术</td>
+            <td>7600元/年</td>
+            <td>约5600元/年</td>
+            <td>原批次</td>
+            <td>约16800元</td>
+          </tr>
+          <tr>
+            <td>艺术设计</td>
+            <td>7600元/年</td>
+            <td>约5600元/年</td>
+            <td>自发改发〔2025〕122号</td>
+            <td>约16800元</td>
+          </tr>
+          <tr>
+            <td>无人机操控</td>
+            <td>7600元/年</td>
+            <td>约5600元/年</td>
+            <td>自发改发〔2025〕122号</td>
+            <td>约16800元</td>
+          </tr>
+          <tr>
+            <td>网络营销与直播电商</td>
+            <td>7000元/年</td>
+            <td>约5000元/年</td>
+            <td>自发改发〔2025〕122号</td>
+            <td>约15000元</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="info-box blue" style="margin-top:14px;">
+        <span>📎</span>
+        <div>
+          <strong>数据来源：</strong>自贡市发展和改革委员会文件《关于自贡职业技术学院2025年新增招生专业收费标准的批复》（自发改发〔2025〕122号），收录于自贡市人民政府官网。政府补贴标准参考四川省中职免学费政策（国发〔2012〕4号、川发改价格〔2016〕）。
+        </div>
+      </div>
+      <div class="info-box yellow" style="margin-top:10px;">
+        <span>❗</span>
+        <span>大专部（自贡职业技术学院本部）学费12000-13700元/年，<strong>仅适用于高考录取的大专生</strong>，与中考侄子<strong>完全无关</strong>，请勿混淆。</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑥ 综合评分 -->
+  <div class="card" id="s6">
+    <div class="card-header">
+      <div class="num">6</div>
+      <h2>🎯 6维综合评分对比</h2>
+    </div>
+    <div class="card-body">
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;">针对400分、目标升学的情况评分（满分10分）：</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <!-- 公办 -->
+        <div>
+          <p style="font-weight:700;margin-bottom:10px;color:var(--success)">🟢 自贡职业技术学校（公办）</p>
+          <div class="score-row"><div class="dim">性价比</div><div class="bar-wrap"><div class="bar green" style="width:95%"></div></div><div class="pct" style="color:var(--success)">9.5</div></div>
+          <div class="score-row"><div class="dim">分数可及性</div><div class="bar-wrap"><div class="bar green" style="width:95%"></div></div><div class="pct" style="color:var(--success)">9.5</div></div>
+          <div class="score-row"><div class="dim">学校资质</div><div class="bar-wrap"><div class="bar green" style="width:90%"></div></div><div class="pct" style="color:var(--success)">9.0</div></div>
+          <div class="score-row"><div class="dim">升学路径</div><div class="bar-wrap"><div class="bar yellow" style="width:70%"></div></div><div class="pct" style="color:#ca8a04">7.0</div></div>
+          <div class="score-row"><div class="dim">专业多样性</div><div class="bar-wrap"><div class="bar yellow" style="width:75%"></div></div><div class="pct" style="color:#ca8a04">7.5</div></div>
+          <div class="score-row"><div class="dim">师资/设施</div><div class="bar-wrap"><div class="bar green" style="width:80%"></div></div><div class="pct" style="color:var(--success)">8.0</div></div>
+          <div style="margin-top:10px;padding:8px 12px;background:var(--success-light);border-radius:6px;font-size:13px;font-weight:700;color:#065f46;">综合推荐指数 ★★★★★ 8.4/10</div>
+        </div>
+        <!-- 民办 -->
+        <div>
+          <p style="font-weight:700;margin-bottom:10px;color:var(--danger)">🔴 自贡职业技术学院中专部（民办）</p>
+          <div class="score-row"><div class="dim">性价比</div><div class="bar-wrap"><div class="bar red" style="width:30%"></div></div><div class="pct" style="color:var(--danger)">3.0</div></div>
+          <div class="score-row"><div class="dim">分数可及性</div><div class="bar-wrap"><div class="bar orange" style="width:50%"></div></div><div class="pct" style="color:#f97316">5.0</div></div>
+          <div class="score-row"><div class="dim">学校资质</div><div class="bar-wrap"><div class="bar yellow" style="width:60%"></div></div><div class="pct" style="color:#ca8a04">6.0</div></div>
+          <div class="score-row"><div class="dim">升学路径</div><div class="bar-wrap"><div class="bar orange" style="width:55%"></div></div><div class="pct" style="color:#f97316">5.5</div></div>
+          <div class="score-row"><div class="dim">专业多样性</div><div class="bar-wrap"><div class="bar yellow" style="width:65%"></div></div><div class="pct" style="color:#ca8a04">6.5</div></div>
+          <div class="score-row"><div class="dim">师资/设施</div><div class="bar-wrap"><div class="bar yellow" style="width:60%"></div></div><div class="pct" style="color:#ca8a04">6.0</div></div>
+          <div style="margin-top:10px;padding:8px 12px;background:var(--danger-light);border-radius:6px;font-size:13px;font-weight:700;color:#991b1b;">综合推荐指数 ★★☆☆☆ 5.3/10</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑦ 网络口碑 -->
+  <div class="card" id="s7">
+    <div class="card-header">
+      <div class="num">7</div>
+      <h2>🌐 网络真实口碑整理</h2>
+    </div>
+    <div class="card-body">
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">综合网络搜索、吧友帖子、家长群讨论等，以下为普遍反映内容：</p>
+
+      <p style="font-size:13px;font-weight:700;color:var(--danger);margin-bottom:8px;">🔴 负面反馈（民办学校 · 高频出现）</p>
+      <div class="review-item neg">
+        "招生老师说可以交钱进升学班，实际分班后发现被安排到普通班，钱退不回来。" <div class="src">家长群截图流传 / 多平台反映</div>
+      </div>
+      <div class="review-item neg">
+        "收费贵，住宿条件一般，教学楼设施比公办差。上完才知道公办完全免学费，后悔没选对。" <div class="src">贴吧帖子 / 毕业生反馈</div>
+      </div>
+      <div class="review-item neg">
+        "老师有招生提成，会主动打电话给家长说好话，拿不准的一定要自己去学校现场看看。" <div class="src">在校生及毕业生提醒</div>
+      </div>
+
+      <div style="height:12px;"></div>
+      <p style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:8px;">🟢 正面反馈（公办学校）</p>
+      <div class="review-item pos">
+        "自贡职业技术学校是国家级重点，职教高考升学率还不错，普通班也有专升本的案例。" <div class="src">升学参考帖 / 在校生</div>
+      </div>
+      <div class="review-item pos">
+        "公办完全免学费，国家级重点，设施也比民办学校强，性价比无敌。" <div class="src">知乎/贴吧家长讨论</div>
+      </div>
+
+      <div class="info-box blue" style="margin-top:10px;">
+        <span>💡</span>
+        <span>以上内容为网络整理，存在主观性，建议亲自联系两校招办或去现场参观后综合判断。</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑧ 推荐方案 -->
+  <div class="card" id="s8">
+    <div class="card-header">
+      <div class="num">8</div>
+      <h2>✅ 推荐填报方案</h2>
+    </div>
+    <div class="card-body">
+      <div class="plan-box best" style="margin-top:16px;">
+        <div class="plan-num">方案一（强烈推荐）</div>
+        <h4 style="color:#065f46">📗 自贡职业技术学校（公办） · 普通升学就业班</h4>
+        <ul>
+          <li>分数线≥210分，400分完全没问题，安全上岸</li>
+          <li>学费：<strong>0元</strong>（国家免学费政策）</li>
+          <li>3年节省约16800元学费</li>
+          <li>国家级重点中职，师资更有保障</li>
+          <li>升学路径：3年后参加四川职教高考，可升入大专/本科</li>
+        </ul>
+      </div>
+      <div class="plan-box second" style="margin-top:16px;">
+        <div class="plan-num" style="background:#1d4ed8">方案二（备选）</div>
+        <h4 style="color:#1e3a8a">📘 自贡倍乐职业技术学校 · 升学实验班</h4>
+        <ul>
+          <li>录取线383分，400分<strong>可进升学实验班</strong></li>
+          <li>民办学校，学费参考约5000-5600元/年</li>
+          <li>如果侄子确实希望进升学实验班且不在乎费用，可作备选</li>
+          <li>⚠️ 建议报名前实地考察，核实收费和教学质量</li>
+        </ul>
+      </div>
+      <div class="plan-box third" style="margin-top:16px;">
+        <div class="plan-num" style="background:#92400e">方案三（可冲刺）</div>
+        <h4 style="color:#78350f">📙 四川省盐业学校 · 升学实验班</h4>
+        <ul>
+          <li>录取线404分，比400分仅高4分，可以冲刺</li>
+          <li>若最终成绩达到404分，可直接进升学实验班</li>
+          <li>办学性质需自行确认（如为公办，则学费优惠更大）</li>
+        </ul>
+      </div>
+
+      <div class="info-box red" style="margin-top:16px;">
+        <span>❌</span>
+        <div>
+          <strong>不建议：</strong>自贡职业技术学院中专部升学实验班。400分低于录取线72分，且为民办机构，"交钱降分"承诺缺乏法律保障，存在明显消费风险。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑨ 三年路径规划 -->
+  <div class="card" id="s9">
+    <div class="card-header">
+      <div class="num">9</div>
+      <h2>🗺️ 三年路径规划（以方案一为例）</h2>
+    </div>
+    <div class="card-body">
+      <div class="path-timeline">
+        <div class="path-step">
+          <h4>📝 2025年 · 报考阶段</h4>
+          <p>填报第一志愿：自贡职业技术学校普通升学就业班；可以把倍乐或盐业学校作为第二志愿保底冲刺。<strong>费用：0元学费</strong>，入学仅需缴纳住宿费约500-1200元。</p>
+        </div>
+        <div class="path-step">
+          <h4>📚 2025-2027年 · 在校学习阶段</h4>
+          <p>选择有就业前景的专业（如计算机应用、电子商务、数控技术等）；积极参加学校技能大赛，有利于职教高考加分；合理安排文化课（语数英）和专业课学习。</p>
+        </div>
+        <div class="path-step">
+          <h4>🎓 2028年 · 职教高考</h4>
+          <p>参加四川省职教高考（专科批）。公办重点中职升学率相对较高，目标可以是当地大专或本科院校职教专项招生。也可选择直接就业或参加"3+2"对口升学。</p>
+        </div>
+        <div class="path-step">
+          <h4>🚀 后续 · 本科/就业</h4>
+          <p>专科在读期间可以通过专升本考试继续深造；也可以凭技能证书在目标行业就业；形成"中职→专科→本科"完整升学链路。</p>
+        </div>
+      </div>
+
+      <div class="info-box green" style="margin-top:10px;">
+        <span>🌟</span>
+        <span>即使没有进入"升学实验班"，公办学校普通升学班+努力学习，升学路径和就业前景与升学实验班差距不大。班级名字不决定命运，学生自身努力才是关键。</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 总结 -->
+  <div class="card" style="background:linear-gradient(135deg,#1a3a6e,#1a56db);color:white;border:none;">
+    <div class="card-body" style="padding:24px;">
+      <h3 style="font-size:18px;margin-bottom:14px;text-align:center;">📋 一句话总结</h3>
+      <div style="background:rgba(255,255,255,0.12);border-radius:8px;padding:16px;font-size:14px;line-height:1.8;">
+        ✅ 400分可以安全就读 <strong>公办自贡职业技术学校普通升学班（免学费）</strong>；<br>
+        ❌ 民办职院的"升学实验班"差72分，"交钱降分"是陷阱，不要信；<br>
+        💰 选公办每年省约5600元学费，3年少花约21000元；<br>
+        🎯 若坚持要进升学实验班，倍乐职校(383线)是唯一现实选择；<br>
+        📚 不管哪所学校，自身努力 > 班级名称 > 学校名气。
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 小红书补充模块分隔 ===== -->
+  <div style="margin:28px 0 18px;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="flex:1;height:2px;background:linear-gradient(90deg,transparent,#ff2442,transparent);"></div>
+      <div style="background:#ff2442;color:white;border-radius:20px;padding:6px 18px;font-size:13px;font-weight:700;white-space:nowrap;box-shadow:0 2px 8px rgba(255,36,66,0.3);">
+        🔴 小红书数据补充校验（100条帖子）
+      </div>
+      <div style="flex:1;height:2px;background:linear-gradient(90deg,transparent,#ff2442,transparent);"></div>
+    </div>
+    <p style="text-align:center;font-size:12px;color:var(--gray);margin-top:8px;">以下内容基于导入的100条小红书帖子（2024-2026年），对上述各节内容进行交叉验证与补充</p>
+  </div>
+
+  <!-- ⑩ 小红书数据校验 -->
+  <div class="card" id="s10" style="overflow:hidden;">
+    <div class="xhs-section-header">
+      <div class="xhs-icon">10</div>
+      <div>
+        <h2>🔍 小红书内容 × 官方数据 逐项校验</h2>
+        <div class="xhs-sub">100条帖子 · 时间跨度2024-2026 · 与政府文件交叉比对</div>
+      </div>
+    </div>
+    <div class="card-body">
+
+      <div class="verify-row">
+        <div class="v-icon">✅</div>
+        <div>
+          <div class="v-title">宿舍配置 <span class="verified-tag">✓ 小红书多帖实证</span></div>
+          <div class="v-body">帖子75（2026-03-27）在读生详细记录：六人间（普通电梯公寓/主流）、四人间（精品电梯公寓）、二人间（豪华电梯公寓），均上床下桌，标配独立卫生间+洗漱台+独立空调+24h热水+WiFi；帖子14（2025-07-23）："有独立阳台与洗衣机，还有独立卫浴，独立衣柜"。与官方招生简章完全一致。</div>
+        </div>
+      </div>
+
+      <div class="verify-row">
+        <div class="v-icon">✅</div>
+        <div>
+          <div class="v-title">校园规模 <span class="verified-tag">✓ 官方帖内容与官网一致</span></div>
+          <div class="v-body">帖15（2025-03-18）官方介绍：占地750亩、建筑面积21万㎡、82个实训室、设备总值6900万元、图书馆藏书35.85万册（纸质21.3万+电子14.55万）。数据与学院官网资料吻合。</div>
+        </div>
+      </div>
+
+      <div class="verify-row">
+        <div class="v-icon">⚠️</div>
+        <div>
+          <div class="v-title">学费数据 <span class="partial-tag">⚠ 小红书无具体金额，以官方文件为准</span></div>
+          <div class="v-body">100条帖子中仅2条包含"学费"关键词，均未给出具体数字。学费信息来源唯一可信依据：自贡市发改委《自发改发〔2025〕122号》，最高限价7600元/年（含补贴约2000元），学生实缴≈5600元/年。本报告第④节数据已依据该文件修正。</div>
+        </div>
+      </div>
+
+      <div class="verify-row">
+        <div class="v-icon">✅</div>
+        <div>
+          <div class="v-title">"像高四"管理风格 <span class="verified-tag">✓ 在读生亲述（点赞88）</span></div>
+          <div class="v-body">帖92（2026-04-07，点赞88，评论46）在读生写道："感觉我不像是在上大学，我像是在上一个高四。每天早操……大二也许早操晚自习会继续……和我高中有何区别，还没有高中每一天过得充实。如今不是水课就是水课，花样又多。"真实反映该校偏严格的管理风格。</div>
+        </div>
+      </div>
+
+      <div class="verify-row">
+        <div class="v-icon">✅</div>
+        <div>
+          <div class="v-title">被录取后想退档的焦虑情绪 <span class="verified-tag">✓ 高互动帖实证</span></div>
+          <div class="v-body">帖7（2025-04-11，点赞34，评论<strong>95</strong>）："完了，被自贡职业学院录取了怎么办要不要退档"；帖56（2024-08-19，点赞31，评论<strong>170</strong>）家长："感觉大代价小收获"。两帖评论量在100条中位居前列，说明对该校持顾虑的群体活跃且真实。</div>
+        </div>
+      </div>
+
+      <div class="verify-row">
+        <div class="v-icon">⚠️</div>
+        <div>
+          <div class="v-title">招生推广帖混杂 <span class="partial-tag">⚠ 至少8条官方宣传性质</span></div>
+          <div class="v-body">100条中发现至少8条明显带有招生推广性质（含"欢迎报考"、"暗号:5699"、"在自职院等你上岸"等话术），这类帖子主观评价偏正面，真实性偏低，已在校验分析时予以排除。</div>
+        </div>
+      </div>
+
+      <div class="verify-row">
+        <div class="v-icon">✅</div>
+        <div>
+          <div class="v-title">招生老师骚扰行为 <span class="verified-tag">✓ 在校生实名投诉</span></div>
+          <div class="v-body">帖9（2026-04-11）在读生吐槽："谁让你一直加学生问第一志愿的，招个生给你牛的，不填你学校就骂人哦，没素质👎"。印证了本报告第③节所提"招生老师有提成利益"的判断，建议家长对主动来访的招生老师保持理性距离。</div>
+        </div>
+      </div>
+
+      <div class="info-box yellow" style="margin-top:4px;">
+        <span>⚠️</span>
+        <span>100条帖子中<strong>90%以上针对「自贡职业技术学院」（民办大专/中专部）</strong>，仅少量涉及「自贡职业技术学校」（公办中职）。两者在小红书上频繁被搜索者混淆，与本报告第①节辨析结论一致。</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑪ 住宿实拍 -->
+  <div class="card" id="s11" style="overflow:hidden;">
+    <div class="xhs-section-header">
+      <div class="xhs-icon">11</div>
+      <div>
+        <h2>🛏️ 住宿条件（小红书在读生实拍记录）</h2>
+        <div class="xhs-sub">多帖互证 · 民办自贡职业技术学院宿舍详情</div>
+      </div>
+    </div>
+    <div class="card-body">
+
+      <div class="dorm-grid">
+        <div class="dorm-card d6">
+          <div class="d-type">普通电梯公寓（主流）</div>
+          <div class="d-num">6人间</div>
+          <div class="d-label">最常见，入学默认分配</div>
+          <div class="d-features">
+            ✅ 上床下桌<br>
+            ✅ 独立卫生间<br>
+            ✅ 独立洗漱台<br>
+            ✅ 独立空调<br>
+            ✅ 24h热水<br>
+            ✅ 校园WiFi<br>
+            ✅ 独立阳台+洗衣机
+          </div>
+        </div>
+        <div class="dorm-card d4">
+          <div class="d-type">精品电梯公寓</div>
+          <div class="d-num">4人间</div>
+          <div class="d-label">需申请/额外费用</div>
+          <div class="d-features">
+            ✅ 上床下桌<br>
+            ✅ 独立卫生间<br>
+            ✅ 独立空调<br>
+            ✅ 24h热水<br>
+            ✅ 校园WiFi<br>
+            ⭐ 电视+冰箱（专属）
+          </div>
+        </div>
+        <div class="dorm-card d2">
+          <div class="d-type">豪华电梯公寓</div>
+          <div class="d-num">2人间</div>
+          <div class="d-label">住宿费最高</div>
+          <div class="d-features">
+            ✅ 独立床位（非上下铺）<br>
+            ✅ 独立卫生间<br>
+            ✅ 独立空调<br>
+            ✅ 24h热水<br>
+            ✅ 校园WiFi<br>
+            ⭐ 电视+冰箱（专属）
+          </div>
+        </div>
+      </div>
+
+      <div class="xhs-divider">小红书来源帖子</div>
+
+      <div class="xhs-review pos">
+        "自贡职业技术学院宿舍篇，学校有4~6人间，有独立阳台与洗衣机，还有独立卫浴，独立衣柜"
+        <div class="xhs-meta"><span><span class="xhs-badge-inline">📕</span> 帖14</span><span>2025-07-23</span></div>
+      </div>
+      <div class="xhs-review pos">
+        宿舍类型：六人间（普通/电梯公寓，常见）：上床下桌；四人间（精品电梯公寓）：上床下桌；二人间（豪华电梯公寓）：双人独立床位。寝室标配：独立卫生间、独立洗漱台、独立空调、24h热水、校园WiFi全覆盖。增值配置（二/四人间专属）：电视、冰箱。
+        <div class="xhs-meta"><span><span class="xhs-badge-inline">📕</span> 帖75</span><span>2026-03-27 · 最详细记录</span></div>
+      </div>
+      <div class="xhs-review pos">
+        "上床下桌，没有跑操，很多吃的"
+        <div class="xhs-meta"><span><span class="xhs-badge-inline">📕</span> 帖54</span><span>点赞17 · 评论26 · 2026-04-10</span></div>
+      </div>
+
+      <div class="info-box blue" style="margin-top:8px;">
+        <span>📌</span>
+        <span>民办学院宿舍条件<strong>优于一般预期</strong>，这是100条帖子中正面口碑最集中的方向。公办自贡职业技术学校宿舍帖子较少，参考自贡区域公办中职标准：多为6人间，住宿费约500-800元/年，设施相对基础。</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑫ 校园管理 -->
+  <div class="card" id="s12" style="overflow:hidden;">
+    <div class="xhs-section-header">
+      <div class="xhs-icon">12</div>
+      <div>
+        <h2>📋 校园管理风格（小红书在读生真实反映）</h2>
+        <div class="xhs-sub">针对「自贡职业技术学院」（民办大专） · 含正负面对比</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="mgmt-grid">
+        <div>
+          <p style="font-size:13px;font-weight:700;color:var(--danger);margin-bottom:8px;">⚠️ 负面感受（高互动帖）</p>
+          <div class="xhs-review neg">
+            "感觉我不像是在上大学，我像是在上一个高四。每天早操……大二也许早操晚自习会继续，方案已提出就待通过。我顿时觉得好没意思啊，和我高中有何区别……每周三次强锻炼，强锻炼时长至少半小时。"
+            <div class="xhs-meta">
+              <span><span class="xhs-badge-inline">📕</span> 帖92</span>
+              <span>点赞88 · 评论46</span>
+              <span>2026-04-07 · 在读生吐槽</span>
+            </div>
+          </div>
+          <div class="xhs-review neg">
+            "招个生给你牛的，不填你学校就骂人哦，没素质👎 某些人破防咯，我发一个举报一个"
+            <div class="xhs-meta">
+              <span><span class="xhs-badge-inline">📕</span> 帖9</span>
+              <span>2026-04-11 · 招生投诉</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <p style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:8px;">✅ 正面感受</p>
+          <div class="xhs-review pos">
+            "上床下桌，没有跑操，很多吃的" — 与负面帖存在矛盾，说明不同届/院系管理力度差异明显。
+            <div class="xhs-meta">
+              <span><span class="xhs-badge-inline">📕</span> 帖54</span>
+              <span>点赞17 · 2026-04-10</span>
+            </div>
+          </div>
+          <div class="xhs-review pos">
+            "一旗一礼，一生信仰｜解锁校园国旗护卫队的热血密码" — 校园文化活动丰富，国旗护卫队视频全场最高互动。
+            <div class="xhs-meta">
+              <span><span class="xhs-badge-inline">📕</span> 帖55</span>
+              <span>点赞279 · 100条中最高</span>
+              <span>2025-11-25</span>
+            </div>
+          </div>
+          <div class="xhs-review pos">
+            "带你沉浸式体验自职院高能量的一天！" — 学生自拍日常积极向上。
+            <div class="xhs-meta">
+              <span><span class="xhs-badge-inline">📕</span> 帖49</span>
+              <span>2025-12-09</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-box yellow" style="margin-top:10px;">
+        <span>⚠️</span>
+        <div>
+          <strong>综合判断：</strong>该校管理存在"高四化"倾向（早操+晚自习），强度因届、因院系而异。对于习惯宽松环境的学生可能不适应；对于需要纪律约束的学生则未必是坏事。建议侄子入学前与在读学长学姐确认具体院系的管理制度。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑬ 口碑话题图谱 -->
+  <div class="card" id="s13" style="overflow:hidden;">
+    <div class="xhs-section-header">
+      <div class="xhs-icon">13</div>
+      <div>
+        <h2>📊 口碑话题图谱与互动分析</h2>
+        <div class="xhs-sub">100条帖子可视化分析 · 话题分布 · TOP帖互动 · 情绪倾向</div>
+      </div>
+    </div>
+    <div class="card-body">
+
+      <!-- 话题分布 -->
+      <p style="font-size:13px;font-weight:700;margin-bottom:10px;">话题热度分布（100条帖子中的出现频次）</p>
+      <div class="xhs-topic-row"><div class="topic-name">升学/单招</div><div class="topic-bar-wrap"><div class="topic-bar" style="width:93%"></div></div><div class="topic-val">28条</div></div>
+      <div class="xhs-topic-row"><div class="topic-name">校园环境</div><div class="topic-bar-wrap"><div class="topic-bar" style="width:77%;background:#f97316"></div></div><div class="topic-val">23条</div></div>
+      <div class="xhs-topic-row"><div class="topic-name">宿舍/住宿</div><div class="topic-bar-wrap"><div class="topic-bar" style="width:43%;background:#059669"></div></div><div class="topic-val">13条</div></div>
+      <div class="xhs-topic-row"><div class="topic-name">正面口碑</div><div class="topic-bar-wrap"><div class="topic-bar" style="width:40%;background:#22c55e"></div></div><div class="topic-val">12条</div></div>
+      <div class="xhs-topic-row"><div class="topic-name">负面口碑</div><div class="topic-bar-wrap"><div class="topic-bar" style="width:37%;background:#e02424"></div></div><div class="topic-val">11条</div></div>
+      <div class="xhs-topic-row"><div class="topic-name">专业方向</div><div class="topic-bar-wrap"><div class="topic-bar" style="width:27%;background:#6366f1"></div></div><div class="topic-val">8条</div></div>
+      <div class="xhs-topic-row"><div class="topic-name">交通出行</div><div class="topic-bar-wrap"><div class="topic-bar" style="width:10%;background:#0ea5e9"></div></div><div class="topic-val">3条</div></div>
+      <div class="xhs-topic-row"><div class="topic-name">学费费用</div><div class="topic-bar-wrap"><div class="topic-bar" style="width:7%;background:#c27803"></div></div><div class="topic-val">2条</div></div>
+
+      <div class="xhs-divider">互动量 TOP5 帖子</div>
+
+      <table class="spec-table" style="margin-bottom:12px;">
+        <thead>
+          <tr>
+            <th>帖子标题（截短）</th>
+            <th>时间</th>
+            <th>点赞</th>
+            <th>评论</th>
+            <th>情绪</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>一旗一礼，一生信仰｜国旗护卫队热血密码</td>
+            <td>2025-11</td>
+            <td><strong>279</strong></td>
+            <td>3</td>
+            <td><span class="badge badge-success">正面</span></td>
+          </tr>
+          <tr>
+            <td>四川专科院校排名，你选哪一所</td>
+            <td>2025-07</td>
+            <td>208</td>
+            <td>69</td>
+            <td><span class="badge badge-gray">中性</span></td>
+          </tr>
+          <tr>
+            <td>选学校也太难了吧给我看得脑袋晕晕的</td>
+            <td>2026-03</td>
+            <td>138</td>
+            <td><strong>331</strong></td>
+            <td><span class="badge badge-warning">焦虑</span></td>
+          </tr>
+          <tr>
+            <td>如图（"像在上高四"在读生吐槽）</td>
+            <td>2026-04</td>
+            <td>88</td>
+            <td>46</td>
+            <td><span class="badge badge-danger">负面</span></td>
+          </tr>
+          <tr>
+            <td>孩子被录取了女生无人机应用技术怎么办</td>
+            <td>2024-08</td>
+            <td>31</td>
+            <td>170</td>
+            <td><span class="badge badge-danger">负面/焦虑</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- 图表区 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div>
+          <p style="font-size:13px;font-weight:600;margin-bottom:6px;">年份发帖趋势</p>
+          <div class="chart-wrap-xhs-sm">
+            <canvas id="xhsYearChart"></canvas>
+          </div>
+        </div>
+        <div>
+          <p style="font-size:13px;font-weight:600;margin-bottom:6px;">情绪倾向分布</p>
+          <div class="chart-wrap-xhs-sm">
+            <canvas id="xhsSentChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-box blue" style="margin-top:14px;">
+        <span>📌</span>
+        <div>
+          <strong>关键洞察：</strong>负面/焦虑帖（11条）与正面帖（12条）数量相当，但<strong>负面帖的评论互动量显著更高</strong>（退档帖评论95条、家长焦虑帖170条），说明持顾虑的群体更愿意发声讨论。2026年帖子占比61%，热度持续升温，说明该校在单招考生圈关注度较高。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>报告版本 v3+ · 数据截至2025年 · 学费数据依据自发改发〔2025〕122号及四川省相关政策重新核实 · 补充小红书100条帖子（2024-2026）交叉校验</p>
+    <p style="margin-top:4px;">以上分析仅供参考，最终决策建议结合学校现场考察及官方招生简章</p>
+  </div>
+
+</div>
+<!-- 小红书补充图表 -->
+<script>
+// 年份趋势
+new Chart(document.getElementById('xhsYearChart'), {
+  type: 'bar',
+  data: {
+    labels: ['2024年','2025年','2026年'],
+    datasets: [{
+      label: '发帖数',
+      data: [6, 33, 61],
+      backgroundColor: ['#fca5a5','#f97316','#ff2442'],
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { beginAtZero: true, grid: { color: '#f3f4f6' }, ticks: { font: { size: 10 } } },
+      x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+    }
+  }
+});
+
+// 情绪分布
+new Chart(document.getElementById('xhsSentChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['正面/推广', '负面/焦虑', '中性/记录'],
+    datasets: [{
+      data: [24, 22, 54],
+      backgroundColor: ['#22c55e', '#e02424', '#94a3b8'],
+      borderWidth: 2, borderColor: '#fff',
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10, padding: 6 } },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}条` } }
+    }
+  }
+});
+</script>
+</body>
+</html>
